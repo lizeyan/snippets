@@ -1,0 +1,7 @@
+.idea/
+dist/
+Snippets.egg-info/
+jupyter/
+.ipynb_checkpoints/
+htmlcov/
+__pycache__/
