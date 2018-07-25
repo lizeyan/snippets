@@ -54,7 +54,7 @@ class VariationalAutoencoder(nn.Module):
         return self.x_dist_cls(**statistics)
 
     def forward(self, x, z_prior, y=None):
-        return self.elbo_sgvb(x, y, z_prior)
+        return self.elbo_sgvb(x, z_prior, y)
 
     def encode(self, x, y=None):
         return self.z_posterior(x, y)
@@ -65,7 +65,10 @@ class VariationalAutoencoder(nn.Module):
     def reconstruct(self, x, y=None, sample_times: int =1) -> dist.Distribution:
         z_posterior_dist = self.z_posterior(x, y)
         z_samples = z_posterior_dist.sample((sample_times,))
-        x_posterior_dist = self.x_posterior(z_samples, y.unsuqeeze(0) if y is not None else None)
+        if y is not None:
+            origin_size = y.size()
+            y = y.unsqueeze_(0).expand(sample_times, *origin_size)
+        x_posterior_dist = self.x_posterior(z_samples, y) if y is not None else None
         return x_posterior_dist
 
 

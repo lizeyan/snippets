@@ -1,3 +1,4 @@
+import typing
 from collections import Iterable
 import time
 from contextlib import contextmanager
@@ -12,7 +13,8 @@ class Loop(object):
     __EPOCH_TIME_KEY = "epoch_time(s)"
     __STEP_TIME_KEY = "step_time(s)"
 
-    def __init__(self, max_epochs: int = 32, max_steps: int = None, disp_epoch_freq=1, print_fn=print, use_cuda=False):
+    def __init__(self, max_epochs: typing.Union[int, None] = None, max_steps: typing.Union[int, None] = None,
+                 disp_epoch_freq=1, print_fn=print, use_cuda=False):
         def assert_positive_integer(v, name, can_be_none=False):
             type_tuple = (int, np.integer, type(None)) if can_be_none else (int, np.integer)
             assert isinstance(v, type_tuple) and (v is None or v > 0), "{} should be positive integer: {}".format(name,
@@ -112,19 +114,17 @@ class Loop(object):
                                                                                                               epoch)
         return self._metrics[epoch - 1]
 
-    def get_metric(self, index):
-        try:
-            x = int(index)
-            return self.get_metric_by_epoch(x)
-        except ValueError or TypeError:
+    def get_metric(self, index: typing.Union[str, int]):
+        if isinstance(index, str):
             return self.get_metric_by_name(index)
+        else:
+            return self.get_metric_by_epoch(index)
 
-    def get_data(self, index):
-        try:
-            x = int(index)
-            return self.get_data_by_epoch(x)
-        except ValueError or TypeError:
+    def get_data(self, index: typing.Union[str, int]):
+        if isinstance(index, str):
             return self.get_data_by_name(index)
+        else:
+            return self.get_data_by_epoch(index)
 
     def get_metric_by_name(self, name: str):
         metric_list = []
@@ -150,14 +150,11 @@ class Loop(object):
         return epoch_list, data_list
 
     def submit_metric(self, name, value):
-        if self._within_steps:
+        if self._within_steps or self._within_epochs:
             d = self._metrics[-1]  # type: dict
             if name not in d:
                 d[name] = []
             d[name].append(value)
-        elif self._within_epochs:
-            d = self._metrics[-1]  # type: dict
-            d[name] = value
         else:
             raise RuntimeError("Can't submit metric outside epoch or step")
 
@@ -251,29 +248,3 @@ class TestLoop(Loop):
 
     def get_data_by_name(self, name: str):
         return self.data[0][name]
-
-
-def __test():
-    with Loop(max_epochs=32) as loop:
-        # noinspection PyUnusedLocal
-        for epoch in loop.iter_epochs():
-            for step, data in loop.iter_steps([1, 2, 3, 4]):
-                loop.submit_metric("step_loss", 1. / step)
-            for step, data in loop.iter_steps([2, 3, 4, 5]):
-                loop.submit_metric("valid_loss", 2 / step)
-    print("")
-    with Loop(max_epochs=32, max_steps=10, disp_epoch_freq=3) as loop:
-        # noinspection PyUnusedLocal
-        for epoch in loop.iter_epochs():
-            for step, data in loop.iter_steps([1, 2, 3, 4]):
-                loop.submit_metric("step_loss", 1. / step)
-    print("")
-    with Loop(max_epochs=32, disp_epoch_freq=4) as loop:
-        # noinspection PyUnusedLocal
-        for epoch in loop.iter_epochs():
-            for step, data in loop.iter_steps([1, 2, 3, 4]):
-                loop.submit_metric("step_loss", 1. / step)
-
-
-if __name__ == '__main__':
-    __test()
