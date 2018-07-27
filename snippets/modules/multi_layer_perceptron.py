@@ -38,6 +38,9 @@ class MultiLayerPerceptron(nn.Module):
             x = layer(x)
         return x
 
+    def layers(self, idx):
+        return self._layers[idx]
+
 
 MLP = MultiLayerPerceptron
 
