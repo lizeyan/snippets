@@ -5,3 +5,7 @@ jupyter/
 .ipynb_checkpoints/
 htmlcov/
 __pycache__/
+build/
+.tmp/
+.coverage
+.coveralls.yml

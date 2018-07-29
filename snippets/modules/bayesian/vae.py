@@ -68,7 +68,7 @@ class VariationalAutoencoder(nn.Module):
         if y is not None:
             origin_size = y.size()
             y = y.unsqueeze_(0).expand(sample_times, *origin_size)
-        x_posterior_dist = self.x_posterior(z_samples, y) if y is not None else None
+        x_posterior_dist = self.x_posterior(z_samples, y if y is not None else None)
         return x_posterior_dist
 
 

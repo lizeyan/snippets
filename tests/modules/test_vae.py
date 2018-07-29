@@ -1,12 +1,8 @@
-import torch
-import numpy as np
-from snippets.scaffold import TrainLoop, TestLoop
 from snippets.modules import VAE, MLP, Lambda
 import torch
 import torch.nn as nn
 import torch.distributions as dist
 import unittest
-import torchvision
 
 
 class TestVAE(unittest.TestCase):
@@ -14,8 +10,13 @@ class TestVAE(unittest.TestCase):
         model = VAE(
             variational_net=MLP(784, [256, 100]),
             generative_net=MLP(2, [100, 256]),
-            z_layers=nn.ModuleDict({"loc": nn.Linear(100, 2), "scale": nn.Sequential(nn.Linear(100, 2), nn.Softplus(), )}),
-            x_layers=nn.ModuleDict({"probs": nn.Sequential(nn.Linear(256, 784), nn.Sigmoid())}),
+            z_layers=nn.ModuleDict({
+                "loc": nn.Sequential(nn.Linear(100, 2)),
+                "scale": nn.Sequential(nn.Linear(100, 2), nn.Softplus(), )
+            }),
+            x_layers=nn.ModuleDict({
+                "probs": nn.Sequential(nn.Linear(256, 784), nn.Sigmoid())
+            }),
             x_dist_cls=dist.Bernoulli,
             z_dist_cls=dist.Normal,
         )
@@ -31,8 +32,13 @@ class TestVAE(unittest.TestCase):
             variational_net=nn.Sequential(Lambda(lambda x: torch.cat([x[0], x[1]], -1)), MLP(784 + 10, [256, 100])),
             generative_net=nn.Sequential(Lambda(lambda x: torch.cat([x[0], x[1]], -1)), MLP(2 + 10, [100, 256])),
             z_layers=nn.ModuleDict(
-                {"loc": nn.Linear(100, 2), "scale": nn.Sequential(nn.Linear(100, 2), nn.Softplus(), )}),
-            x_layers=nn.ModuleDict({"probs": nn.Sequential(nn.Linear(256, 784), nn.Sigmoid())}),
+                {
+                    "loc": nn.Sequential(nn.Linear(100, 2)),
+                    "scale": nn.Sequential(nn.Linear(100, 2), nn.Softplus(), )
+                }),
+            x_layers=nn.ModuleDict({
+                "probs": nn.Sequential(nn.Linear(256, 784), nn.Sigmoid())
+            }),
             x_dist_cls=dist.Bernoulli,
             z_dist_cls=dist.Normal,
         )
