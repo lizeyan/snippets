@@ -24,8 +24,9 @@ class TestVAE(unittest.TestCase):
         x = torch.Tensor(32, 784)
         z = model.encode(x)
         x = model.decode(z.sample())
-        model(x.sample(), z_prior)
-        model.reconstruct(x.sample(), sample_times=12)
+        model(x.mean, z_prior)
+        reconstructed = model.reconstruct(x.mean, sample_times=12)
+        self.assertEqual(reconstructed.mean.size(), torch.Size((12, 32, 784)))
 
     def test_cvae(self):
         model = VAE(
@@ -46,6 +47,7 @@ class TestVAE(unittest.TestCase):
         x = torch.Tensor(32, 784)
         y = torch.Tensor(32, 10)
         z = model.encode(x, y)
-        x = model.decode(z.sample(), y)
-        model(x.sample(), z_prior, y)
-        model.reconstruct(x.sample(), sample_times=12, y=y)
+        x_dist = model.decode(z.sample(), y)
+        model(x_dist.mean, z_prior, y)
+        reconstructed = model.reconstruct(x_dist.mean, sample_times=12, y=y)
+        self.assertEqual(reconstructed.mean.size(), torch.Size((12, 32, 784)))
