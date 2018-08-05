@@ -48,6 +48,8 @@ class IterGPUSubprocessScheduler(object):
             setting = self._job_args_list[index]
             if job.poll() is not None:
                 logging.getLogger(__file__).info(f"job at device {key} exits with {job.poll()}: {setting}")
+                self._finished_cnt += 1
+                logging.getLogger(__file__).info(f"{self._finished_cnt}/{len(self._job_args_list)} ended")
                 self._future_list[index]["stdout"] = job.stdout
                 self._future_list[index]["stderr"] = job.stderr
                 self._device2job[key] = None
@@ -71,5 +73,6 @@ class IterGPUSubprocessScheduler(object):
         logging.getLogger(__file__).info(f"job assigned to {self._available_device}: {args, kwargs}")
         self._available_device = None
         self._next_start_job_index += 1
+        logging.getLogger(__file__).info(f"{self._next_start_job_index}/{len(self._job_args_list)} started")
 
 
