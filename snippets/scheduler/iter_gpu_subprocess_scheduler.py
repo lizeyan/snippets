@@ -2,6 +2,7 @@ from typing import *
 import time
 import logging
 from subprocess import Popen
+import os
 from ..scaffold import get_gpu_metrics
 
 
@@ -68,6 +69,12 @@ class IterGPUSubprocessScheduler(object):
     def _start_job(self):
         assert self._available_device is not None and self._next_start_job_index < len(self._job_args_list)
         args, kwargs = self._job_args_list[self._next_start_job_index]
+        if "env" in kwargs:
+            env = kwargs["env"]
+        else:
+            env = os.environ
+        env["CUDA_VISIBLE_DEVICES"] = self._available_device
+        kwargs["env"] = env
         job = Popen(*args, **kwargs)
         self._device2job[self._available_device] = {"job": job, "index": self._next_start_job_index}
         logging.getLogger(__file__).info(f"job assigned to {self._available_device}: {args, kwargs}")
