@@ -10,11 +10,37 @@ from torch.utils.data import DataLoader
 
 
 class Loop(object):
+    """
+    Train Loop
+    Example Usage:
+        with TrainLoop().with_context() as loop:
+            for epoch in loop.iter_epochs():
+                for step, data in loop.iter_steps(data_loader):
+                    compute code
+                    loop.submit_metric(name, metric value)
+                    loop.submit_data(name, data value)
+        loop.get_metric(epoch)
+        # dict, key is the metric name, value is the list of the values submitted in that epoch
+        loop.get_metric(name)
+        # tuple of lists,
+        # the first one is the list of epochs that contain this metric,
+        # the second one is the list of metrics, each element is a list of submitted metric values
+        # data are just all the same, but they won't displayed in screen
+        loop.get_data(epoch)
+        loop.get_data(name)
+    """
     __EPOCH_TIME_KEY = "epoch_time(s)"
     __STEP_TIME_KEY = "step_time(s)"
 
     def __init__(self, max_epochs: typing.Union[int, None] = None, max_steps: typing.Union[int, None] = None,
-                 disp_epoch_freq=1, print_fn=print, use_cuda=False):
+                 disp_epoch_freq=1, print_fn: typing.Callable[[str], ...]=print, use_cuda=False):
+        """
+        :param max_epochs: Either max_epochs or max_steps should be a valid value
+        :param max_steps: Either max_epochs or max_steps should be a valid value
+        :param disp_epoch_freq: the interval (counting in epochs) between two logging messages
+        :param print_fn: the function used to print logging messages
+        :param use_cuda: use cuda or not. If it is true, Loop will automatically place data on the cuda device
+        """
         def assert_positive_integer(v, name, can_be_none=False):
             type_tuple = (int, np.integer, type(None)) if can_be_none else (int, np.integer)
             assert isinstance(v, type_tuple) and (v is None or v > 0), "{} should be positive integer: {}".format(name,
@@ -44,6 +70,10 @@ class Loop(object):
 
     @contextmanager
     def with_context(self):
+        """
+        context manager for Loop
+        :return:
+        """
         self._within_context = True
         yield self
         self._within_context = False
@@ -223,7 +253,17 @@ TrainLoop = Loop
 
 
 class TestLoop(Loop):
-    def __init__(self, print_fn=print, use_cuda=False, no_grad=True):
+    """
+    A subclass of Loop.
+    There is not "iter_epochs" in TestLoop.
+    And operations will not compute grads by default
+    """
+    def __init__(self, print_fn: typing.Callable[[str], ...]=print, use_cuda=False, no_grad=True):
+        """
+        :param print_fn: the print function
+        :param use_cuda: use cuda no not. If it is true, Loop will automatically place data on the cuda device
+        :param no_grad: disable computing grads for pytorch operations or not
+        """
         super(TestLoop, self).__init__(max_epochs=1, max_steps=None, disp_epoch_freq=1, print_fn=print_fn,
                                        use_cuda=use_cuda)
         self.no_grad = no_grad
@@ -233,6 +273,10 @@ class TestLoop(Loop):
 
     @contextmanager
     def with_context(self):
+        """
+        context manager for TestLoop
+        :return:
+        """
         import torch
         self._within_context = True
         for _ in super().iter_epochs():
