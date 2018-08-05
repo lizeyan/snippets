@@ -73,7 +73,7 @@ class IterGPUSubprocessScheduler(object):
             env = kwargs["env"]
         else:
             env = os.environ
-        env["CUDA_VISIBLE_DEVICES"] = self._available_device
+        env["CUDA_VISIBLE_DEVICES"] = f"{self._available_device}"
         kwargs["env"] = env
         job = Popen(*args, **kwargs)
         self._device2job[self._available_device] = {"job": job, "index": self._next_start_job_index}

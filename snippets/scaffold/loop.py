@@ -33,7 +33,7 @@ class Loop(object):
     __STEP_TIME_KEY = "step_time(s)"
 
     def __init__(self, max_epochs: typing.Union[int, None] = None, max_steps: typing.Union[int, None] = None,
-                 disp_epoch_freq=1, print_fn: typing.Callable[[str], ...]=print, use_cuda=False):
+                 disp_epoch_freq=1, print_fn: typing.Callable[[str], None]=print, use_cuda=False):
         """
         :param max_epochs: Either max_epochs or max_steps should be a valid value
         :param max_steps: Either max_epochs or max_steps should be a valid value
@@ -258,7 +258,7 @@ class TestLoop(Loop):
     There is not "iter_epochs" in TestLoop.
     And operations will not compute grads by default
     """
-    def __init__(self, print_fn: typing.Callable[[str], ...]=print, use_cuda=False, no_grad=True):
+    def __init__(self, print_fn: typing.Callable[[str], None]=print, use_cuda=False, no_grad=True):
         """
         :param print_fn: the print function
         :param use_cuda: use cuda no not. If it is true, Loop will automatically place data on the cuda device
