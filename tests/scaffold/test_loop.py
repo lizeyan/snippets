@@ -1,6 +1,7 @@
 import torch
 import unittest
 from snippets.scaffold import TrainLoop, TestLoop
+from snippets.scaffold import sort_gpu_index
 import time
 import re
 
@@ -86,5 +87,32 @@ class TestTrainLoop(unittest.TestCase):
                     pass
                 if epoch > 1:
                     self.assertEqual(re.search("epoch:[\d+]/[\d+]]", self.line), None)
+
+    def test_assert(self):
+        with TrainLoop(max_epochs=14, print_fn=self.print, disp_epoch_freq=5).with_context() as train_loop:
+            for epoch in train_loop.iter_epochs():
+                if epoch == 6 or epoch == 11:
+                    self.assertTrue(f"epoch:{epoch - 1}" in self.line.lower())
+            try:
+                train_loop.submit_data("test", 0)
+            except RuntimeError:
+                pass
+            try:
+                train_loop.submit_metric("test", 0)
+            except RuntimeError:
+                pass
+        self.assertTrue(f"epoch:{14}" in self.line.lower())
+
+    def test_test_loop(self):
+        torch.cuda.set_device(sort_gpu_index()[0])
+        with TestLoop(print_fn=None, use_cuda=True).with_context() as test_loop:
+            try:
+                for _ in test_loop.iter_epochs():
+                    pass
+            except RuntimeError:
+                pass
+            for _ in test_loop.iter_steps([torch.Tensor([0.])]):
+                pass
+
 
 

@@ -8,9 +8,10 @@ _COMMAND = f"nvidia-smi --query-gpu={','.join(_QUERIES)} --format=csv,nounits"
 
 
 def get_gpu_metrics() -> pd.DataFrame:
-    smi = Popen(_COMMAND, shell=True, stdout=PIPE, stderr=PIPE, env=os.environ)
+    smi = Popen(_COMMAND, shell=True, stdout=PIPE, env=os.environ)
     smi.wait()
     df = pd.read_csv(smi.stdout, index_col=None)
+    smi.stdout.close()
     return df
 
 
