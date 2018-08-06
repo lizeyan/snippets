@@ -3,8 +3,7 @@ python:
   - "3.6"
 install:
   - pip install -r requirements.txt --quiet
-  - pip install coverage --quiet
+  - pip install coverage coveralls --quiet
 script:
   - coverage run -m unittest tests
-  - coverage report
-  - coverage html
+  - coveralls
