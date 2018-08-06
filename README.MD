@@ -1,5 +1,5 @@
 [![Documentation Status](https://readthedocs.org/projects/snippets-lizytalk/badge/?version=latest)](https://snippets-lizytalk.readthedocs.io/en/latest/?badge=latest)
-
+[![Travis Status](https://travis-ci.org/lizeyan/snippets.svg?branch=master)](https://travis-ci.org/lizeyan/snippets.svg?branch=master)
 
 # Snippets
 

@@ -6,6 +6,6 @@ install:
   - pip install -r requirements.txt --quiet
   - pip install coverage --quiet
 script:
-  - corvage -m unittest tests
-  - corvage report
-  - corvage html
+  - coverage -m unittest tests
+  - coverage report
+  - coverage html
