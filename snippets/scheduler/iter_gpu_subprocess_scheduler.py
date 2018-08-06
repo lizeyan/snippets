@@ -11,7 +11,10 @@ class IterGPUSubprocessScheduler(object):
                  interval: float=1,
                  restart_failed: bool=False):
         if devices == "all":
-            devices = list(int(_) for _ in get_gpu_metrics()["index"])
+            try:
+                devices = list(int(_) for _ in get_gpu_metrics()["index"])
+            except KeyError:
+                raise RuntimeError("No GPU devices found or nvidia-smi is not in PATH")
         self._device2job = {device: None for device in devices}
         assert len(self._device2job) > 0, "No GPU device given"
         self._interval = interval

@@ -1,5 +1,6 @@
 import sys
 
+from snippets.scaffold import get_gpu_metrics
 from snippets.scheduler import IterGPUSubprocessScheduler
 import unittest
 import subprocess
@@ -12,6 +13,13 @@ logging.basicConfig(
 
 
 class TestIterGOUSubprocessScheduler(unittest.TestCase):
+    def test_all(self):
+        try:
+            scheduler = IterGPUSubprocessScheduler("all")
+            self.assertEqual(len(scheduler._device2job), len(get_gpu_metrics()))
+        except RuntimeError:
+            pass
+
     def test_run(self):
         scheduler = IterGPUSubprocessScheduler(devices=[0, 1, 2, 3], interval=0.001)
         future1 = scheduler.submit("ls /tmp -al", stdout=subprocess.PIPE, shell=True)
