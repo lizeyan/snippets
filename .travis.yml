@@ -5,5 +5,5 @@ install:
   - pip install -r requirements.txt --quiet
   - pip install coverage coveralls --quiet
 script:
-  - coverage run -m unittest tests
+  - coverage run --source=snippets -m unittest tests
   - coveralls
