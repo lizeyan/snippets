@@ -104,15 +104,13 @@ class TestTrainLoop(unittest.TestCase):
         self.assertTrue(f"epoch:{14}" in self.line.lower())
 
     def test_test_loop(self):
-        torch.cuda.set_device(sort_gpu_index()[0])
-        with TestLoop(print_fn=None, use_cuda=True).with_context() as test_loop:
-            try:
-                for _ in test_loop.iter_epochs():
+        if len(sort_gpu_index()) > 0:
+            torch.cuda.set_device(sort_gpu_index()[0])
+            with TestLoop(print_fn=None, use_cuda=True).with_context() as test_loop:
+                try:
+                    for _ in test_loop.iter_epochs():
+                        pass
+                except RuntimeError:
                     pass
-            except RuntimeError:
-                pass
-            for _ in test_loop.iter_steps([torch.Tensor([0.])]):
-                pass
-
-
-
+                for _ in test_loop.iter_steps([torch.Tensor([0.])]):
+                    pass

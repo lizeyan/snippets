@@ -13,7 +13,10 @@ def get_gpu_metrics() -> pd.DataFrame:
     """
     smi = Popen(_COMMAND, shell=True, stdout=PIPE, env=os.environ)
     smi.wait()
-    df = pd.read_csv(smi.stdout, index_col=None)
+    if smi.poll() != 0:
+        df = pd.DataFrame()
+    else:
+        df = pd.read_csv(smi.stdout, index_col=None)
     smi.stdout.close()
     return df
 
@@ -23,5 +26,8 @@ def sort_gpu_index() -> list:
     :return: return a list of GPU index, sorted by free memory (descending) and utilization (ascending)
     """
     df = get_gpu_metrics()
-    df = df.sort_values(by=[" memory.free [MiB]", " utilization.gpu [%]"], ascending=[0, 1])
-    return list(int(i) for i in df.index)
+    if len(df) == 0:
+        return []
+    else:
+        df = df.sort_values(by=[" memory.free [MiB]", " utilization.gpu [%]"], ascending=[0, 1])
+        return list(int(i) for i in df.index)

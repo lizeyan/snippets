@@ -258,7 +258,8 @@ class TestLoop(Loop):
     There is not "iter_epochs" in TestLoop.
     And operations will not compute grads by default
     """
-    def __init__(self, print_fn: typing.Callable[[str], None]=print, use_cuda=False, no_grad=True):
+    def __init__(self, print_fn: Union[typing.Callable[[str], None], None]=print,
+                 use_cuda=False, no_grad=True):
         """
         :param print_fn: the print function
         :param use_cuda: use cuda no not. If it is true, Loop will automatically place data on the cuda device
