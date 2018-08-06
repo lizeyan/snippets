@@ -4,6 +4,8 @@ import torch.nn as nn
 import torch.distributions as dist
 import unittest
 
+from snippets.scaffold import get_gpu_metrics
+
 
 class TestVAE(unittest.TestCase):
     def test_vae(self):
@@ -43,6 +45,9 @@ class TestVAE(unittest.TestCase):
             x_dist_cls=dist.Bernoulli,
             z_dist_cls=dist.Normal,
         )
+        if len(get_gpu_metrics()) > 0:
+            model.cuda()
+            model.cpu()
         z_prior = dist.Normal(torch.Tensor((0.,)), torch.Tensor((1.,)))
         x = torch.Tensor(32, 784)
         y = torch.Tensor(32, 10)

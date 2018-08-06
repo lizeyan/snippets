@@ -13,7 +13,7 @@ logging.basicConfig(
 
 class TestIterGOUSubprocessScheduler(unittest.TestCase):
     def test_run(self):
-        scheduler = IterGPUSubprocessScheduler(devices="all", interval=0.001)
+        scheduler = IterGPUSubprocessScheduler(devices=[0, 1, 2, 3], interval=0.001)
         future1 = scheduler.submit("ls /tmp -al", stdout=subprocess.PIPE, shell=True)
         scheduler.submit("cd /tmp && cd ..", shell=True)
         scheduler.submit("cd /tmp && cd ..", shell=True)
@@ -24,7 +24,7 @@ class TestIterGOUSubprocessScheduler(unittest.TestCase):
         future1["stdout"].close()
 
     def test_failed(self):
-        scheduler = IterGPUSubprocessScheduler(devices="all", interval=0.001)
+        scheduler = IterGPUSubprocessScheduler(devices=[0, 1, 2, 3], interval=0.001)
         future1 = scheduler.submit("cd /data", stderr=subprocess.PIPE, shell=True, env={})
         scheduler()
         self.assertTrue(future1["stdout"] is None)
@@ -33,7 +33,7 @@ class TestIterGOUSubprocessScheduler(unittest.TestCase):
         self.assertEqual(scheduler.failed_count, 1)
 
     def test_restart(self):
-        scheduler = IterGPUSubprocessScheduler(devices="all", interval=0.001, restart_failed=True)
+        scheduler = IterGPUSubprocessScheduler(devices=[0, 1, 2, 3], interval=0.001, restart_failed=True)
         future1 = scheduler.submit(" if [ ! -f /tmp/foo.txt ]; then touch /tmp/foo.txt && exit 1; \
                     else rm /tmp/foo.txt && exit 0; fi",
                                    stderr=subprocess.PIPE, shell=True, env={})
@@ -43,5 +43,4 @@ class TestIterGOUSubprocessScheduler(unittest.TestCase):
         future1["stderr"].close()
         self.assertEqual(scheduler.failed_count, 0)
         self.assertEqual(scheduler._failed_job_indices, set())
-        self.assertEqual(scheduler._available_device, None)
         self.assertEqual(scheduler._next_start_job_index, 1)
