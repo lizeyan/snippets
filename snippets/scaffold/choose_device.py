@@ -1,9 +1,11 @@
-from subprocess import *
-import pandas as pd
 import os
+from subprocess import *
+
+import pandas as pd
 
 _QUERIES = ["index", "gpu_name", "utilization.gpu",
             "utilization.memory", "memory.free", "memory.total", "driver_version"]
+# noinspection SpellCheckingInspection
 _COMMAND = f"nvidia-smi --query-gpu={','.join(_QUERIES)} --format=csv,nounits"
 
 

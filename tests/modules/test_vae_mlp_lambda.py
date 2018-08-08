@@ -1,9 +1,10 @@
-from snippets.modules import VAE, MLP, Lambda
-import torch
-import torch.nn as nn
-import torch.distributions as dist
 import unittest
 
+import torch
+import torch.distributions as dist
+import torch.nn as nn
+
+from snippets.modules import VAE, MLP, Lambda
 from snippets.scaffold import get_gpu_metrics
 
 
@@ -32,8 +33,8 @@ class TestVAE(unittest.TestCase):
 
     def test_cvae(self):
         model = VAE(
-            variational_net=nn.Sequential(Lambda(lambda x: torch.cat([x[0], x[1]], -1)), MLP(784 + 10, [256, 100])),
-            generative_net=nn.Sequential(Lambda(lambda x: torch.cat([x[0], x[1]], -1)), MLP(2 + 10, [100, 256])),
+            variational_net=nn.Sequential(Lambda(lambda _x: torch.cat([_x[0], _x[1]], -1)), MLP(784 + 10, [256, 100])),
+            generative_net=nn.Sequential(Lambda(lambda _x: torch.cat([_x[0], _x[1]], -1)), MLP(2 + 10, [100, 256])),
             z_layers=nn.ModuleDict(
                 {
                     "loc": nn.Sequential(nn.Linear(100, 2)),
@@ -58,8 +59,8 @@ class TestVAE(unittest.TestCase):
         if len(get_gpu_metrics()) <= 0:
             return
         model = VAE(
-            variational_net=nn.Sequential(Lambda(lambda x: torch.cat([x[0], x[1]], -1)), MLP(784 + 10, [256, 100])),
-            generative_net=nn.Sequential(Lambda(lambda x: torch.cat([x[0], x[1]], -1)), MLP(2 + 10, [100, 256])),
+            variational_net=nn.Sequential(Lambda(lambda _x: torch.cat([_x[0], _x[1]], -1)), MLP(784 + 10, [256, 100])),
+            generative_net=nn.Sequential(Lambda(lambda _x: torch.cat([_x[0], _x[1]], -1)), MLP(2 + 10, [100, 256])),
             z_layers=nn.ModuleDict(
                 {
                     "loc": nn.Sequential(nn.Linear(100, 2)),

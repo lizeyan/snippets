@@ -1,6 +1,6 @@
+import time
 import typing
 from collections import Iterable
-import time
 from contextlib import contextmanager
 from typing import List, Dict, Union, Any
 
@@ -33,7 +33,8 @@ class Loop(object):
     __STEP_TIME_KEY = "step_time(s)"
 
     def __init__(self, max_epochs: typing.Union[int, None] = None, max_steps: typing.Union[int, None] = None,
-                 disp_epoch_freq=1, print_fn: typing.Callable[[str], None]=print, use_cuda=False):
+                 disp_epoch_freq=1,
+                 print_fn: Union[typing.Callable[[str], None], None] = print, use_cuda=False):
         """
         :param max_epochs: Either max_epochs or max_steps should be a valid value
         :param max_steps: Either max_epochs or max_steps should be a valid value
