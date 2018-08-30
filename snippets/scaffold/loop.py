@@ -93,7 +93,7 @@ class Loop(object):
             for data in dataloader:
                 self._step_cnt += 1
                 tic = time.time()
-                yield self._step_cnt, self.__make_variables(data)
+                yield self._step_cnt, data
                 toc = time.time()
                 self.submit_metric(self.__STEP_TIME_KEY, toc - tic)
                 if self._max_steps is not None and self._step_cnt >= self._max_steps:
