@@ -28,6 +28,7 @@ class TestMetric(unittest.TestCase):
         except KeyError:
             ok = False
         finally:
+            Metric._IGNORE_KEY_ERROR = True
             if ok:
                 raise ValueError("Key Error is ignored")
         ok = True
@@ -37,6 +38,7 @@ class TestMetric(unittest.TestCase):
         except KeyError:
             ok = False
         finally:
+            Metric._IGNORE_KEY_ERROR = True
             if ok:
                 raise ValueError("Key Error is ignored")
 

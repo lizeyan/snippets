@@ -4,8 +4,9 @@ import unittest
 
 import torch
 
-from snippets.scaffold import TrainLoop, TestLoop
+from snippets.scaffold import TrainLoop, TestLoop, Metric
 from snippets.scaffold import sort_gpu_index
+
 
 
 class TestTrainLoop(unittest.TestCase):
@@ -70,7 +71,6 @@ class TestTrainLoop(unittest.TestCase):
                 for step, _ in train_loop.iter_steps([torch.Tensor() for _ in range(6)]):
                     time.sleep(0.01)
                 if epoch > 1:
-                    print(self.line)
                     eta = float(re.search("ETA:(?P<eta>[\d.]+)s", self.line).group("eta"))
                     self.assertAlmostEqual(eta, 0.1 - (epoch - 1) * 6 * 0.01, places=2)
 

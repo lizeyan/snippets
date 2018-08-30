@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 
 class Metric(object):
-    __IGNORE_KEY_ERROR = True
+    _IGNORE_KEY_ERROR = True
 
     def __init__(self, name: str):
         self.name = name
@@ -32,7 +32,7 @@ class Metric(object):
             try:
                 return self.data[item]
             except KeyError as e:
-                if not self.__IGNORE_KEY_ERROR:
+                if not self._IGNORE_KEY_ERROR:
                     raise e
         elif isinstance(item, str) and item == "all":
             return list(self.data.values())
@@ -42,8 +42,7 @@ class Metric(object):
                 try:
                     ret.append(self.data[_])
                 except KeyError as e:
-                    if not self.__IGNORE_KEY_ERROR:
-                        print(self.__IGNORE_KEY_ERROR)
+                    if not self._IGNORE_KEY_ERROR:
                         raise e
             return ret
 
@@ -59,7 +58,6 @@ class Metric(object):
     @staticmethod
     @contextmanager
     def raise_key_error():
-        Metric.__IGNORE_KEY_ERROR = False
+        Metric._IGNORE_KEY_ERROR = False
         yield
-        Metric.__IGNORE_KEY_ERROR = True
-
+        Metric._IGNORE_KEY_ERROR = True
