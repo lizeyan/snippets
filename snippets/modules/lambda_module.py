@@ -1,5 +1,6 @@
-import torch.nn as nn
 import typing
+
+import torch.nn as nn
 
 
 class Lambda(nn.Module):
@@ -15,10 +16,12 @@ class Lambda(nn.Module):
 
     def cuda(self, device=None):
         if isinstance(self.func, nn.Module):
+            # noinspection PyUnresolvedReferences
             self.func.cuda(device)
         return self
 
     def cpu(self):
         if isinstance(self.func, nn.Module):
+            # noinspection PyUnresolvedReferences
             self.func.cpu()
         return self

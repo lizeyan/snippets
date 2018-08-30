@@ -1,9 +1,11 @@
-import torch
+import re
+import time
 import unittest
+
+import torch
+
 from snippets.scaffold import TrainLoop, TestLoop
 from snippets.scaffold import sort_gpu_index
-import time
-import re
 
 
 class TestTrainLoop(unittest.TestCase):
@@ -19,7 +21,7 @@ class TestTrainLoop(unittest.TestCase):
         with TrainLoop(max_steps=10, max_epochs=3, print_fn=None).with_context() as train_loop:
             for epoch in train_loop.iter_epochs():
                 epoch_counts += 1
-                for _ in train_loop.iter_steps([torch.Tensor(5) for i in range(6)]):
+                for _ in train_loop.iter_steps([torch.Tensor(5) for _ in range(6)]):
                     step_counts += 1
                     train_loop.submit_metric("value1", 1)
                     if epoch % 2 == 0:
@@ -50,7 +52,7 @@ class TestTrainLoop(unittest.TestCase):
 
         step_counts = 0
         with TestLoop(print_fn=None).with_context() as test_loop:
-            for _ in test_loop.iter_steps([torch.Tensor(5) for i in range(6)]):
+            for _ in test_loop.iter_steps([torch.Tensor(5) for _ in range(6)]):
                 step_counts += 1
                 test_loop.submit_metric("value1", 1)
                 test_loop.submit_data("value1", 1)
@@ -104,8 +106,17 @@ class TestTrainLoop(unittest.TestCase):
         self.assertTrue(f"epoch:{14}" in self.line.lower())
 
     def test_test_loop(self):
-        torch.cuda.set_device(sort_gpu_index()[0])
-        with TestLoop(print_fn=None, use_cuda=True).with_context() as test_loop:
+        if len(sort_gpu_index()) > 0:
+            torch.cuda.set_device(sort_gpu_index()[0])
+            with TestLoop(print_fn=None, use_cuda=True).with_context() as test_loop:
+                try:
+                    for _ in test_loop.iter_epochs():
+                        pass
+                except RuntimeError:
+                    pass
+                for _ in test_loop.iter_steps([torch.Tensor([0.])]):
+                    pass
+        with TestLoop(print_fn=None, use_cuda=False, no_grad=False).with_context() as test_loop:
             try:
                 for _ in test_loop.iter_epochs():
                     pass
@@ -113,6 +124,3 @@ class TestTrainLoop(unittest.TestCase):
                 pass
             for _ in test_loop.iter_steps([torch.Tensor([0.])]):
                 pass
-
-
-
