@@ -8,3 +8,4 @@ def assert_positive_integer(**kwargs):
         finally:
             if not ok:
                 raise ValueError(f"{key} should be positive integer, but it is {value}")
+        return True

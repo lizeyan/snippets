@@ -3,10 +3,13 @@ import typing
 from collections import Iterable
 from contextlib import contextmanager
 from typing import List, Dict, Union, Any
+import warnings
 
 import numpy as np
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
+
+from .metric import Metric
+from ..utilities import assert_positive_integer
 
 
 class Loop(object):
@@ -32,42 +35,44 @@ class Loop(object):
     __EPOCH_TIME_KEY = "epoch_time(s)"
     __STEP_TIME_KEY = "step_time(s)"
 
-    def __init__(self, max_epochs: typing.Union[int, None] = None, max_steps: typing.Union[int, None] = None,
+    def __init__(self, max_epochs: typing.Union[int, None] = None,
+                 max_steps: typing.Union[int, None] = None,
+                 disp_step_freq=None,
                  disp_epoch_freq=1,
-                 print_fn: Union[typing.Callable[[str], None], None] = print, use_cuda=False):
+                 print_fn: Union[typing.Callable[[str], None], None] = print,):
         """
         :param max_epochs: Either max_epochs or max_steps should be a valid value
         :param max_steps: Either max_epochs or max_steps should be a valid value
         :param disp_epoch_freq: the interval (counting in epochs) between two logging messages
         :param print_fn: the function used to print logging messages
-        :param use_cuda: use cuda or not. If it is true, Loop will automatically place data on the cuda device
         """
-        def assert_positive_integer(v, name, can_be_none=False):
-            type_tuple = (int, np.integer, type(None)) if can_be_none else (int, np.integer)
-            assert isinstance(v, type_tuple) and (v is None or v > 0), "{} should be positive integer: {}".format(name,
-                                                                                                                  v)
 
         assert max_epochs is not None or max_steps is not None, \
             "At least one of max_epochs and max_steps should not be None"
-        assert_positive_integer(max_epochs, "max_epochs", True)
-        assert_positive_integer(max_steps, "max_steps", True)
-        assert_positive_integer(disp_epoch_freq, "disp_epoch_freq")
+        assert max_epochs is None or assert_positive_integer(max_epochs=max_epochs)
+        assert max_steps is None or assert_positive_integer(max_steps=max_steps)
+        assert disp_epoch_freq is None or assert_positive_integer(disp_epoch_freq=disp_epoch_freq)
+        assert disp_step_freq is None or assert_positive_integer(disp_step_freq=disp_step_freq)
         self._max_epochs = max_epochs
         self._max_steps = max_steps
         self._print_fn = print_fn
         self._disp_epoch_freq = disp_epoch_freq
-        self._use_cuda = use_cuda
+        self._disp_step_freq = disp_step_freq
 
         self._epoch_cnt = 0  # type: int
         self._step_cnt = 0  # type: int
         self._displayed_at_epoch = 0  # type: int
+        self._displayed_at_step = 0  # type: int
 
-        self._metrics = []  # type: List[Dict[str, Any]]
-        self._data = []  # type: List[Dict[str, Any]]
+        self._metrics = {}  # type: Dict[str, Metric]
+        self._data = {}  # type: Dict[str, Metric]
 
         self._within_epochs = False
         self._within_steps = False
         self._within_context = False
+
+        self._epoch2step_dict = {}  # Dict[int, List]
+        self._step2epoch_dict = {}  # Dict[int, int]
 
     @contextmanager
     def with_context(self):
@@ -93,7 +98,8 @@ class Loop(object):
                     self._max_steps is None or self._step_cnt < self._max_steps)
 
         def disp_condition():
-            return self._epoch_cnt % self._disp_epoch_freq == 0
+            return self._disp_epoch_freq is not None and \
+                   self._epoch_cnt % self._disp_epoch_freq == 0
 
         assert self._within_context, "iter_epochs() should be called in context manager"
 
@@ -102,17 +108,22 @@ class Loop(object):
         try:
             while loop_condition():
                 self._epoch_cnt += 1
-                self._metrics.append({})
-                self._data.append({})
+                self._epoch2step_dict[self._epoch_cnt] = []
                 tic = time.time()
+                remember_step_count = self._step_cnt
                 yield self._epoch_cnt
+                # a epoch should contains at least one step
+                if remember_step_count == self._step_cnt:
+                    warnings.warn("An epoch should contains at least one step")
+                    self._step_cnt += 1
+                    self._epoch2step_dict[self._epoch_cnt].append(self._step_cnt)
+                    self._step2epoch_dict[self._step_cnt] = self._epoch_cnt
+
                 toc = time.time()
                 self.submit_metric(self.__EPOCH_TIME_KEY, toc - tic)
                 if disp_condition():
-                    self._print_log()
+                    self._print_log(unit="epoch")
                     self._displayed_at_epoch = self._epoch_cnt
-            if not disp_condition():
-                self._print_log()
         finally:
             self._within_epochs = False
 
@@ -120,106 +131,83 @@ class Loop(object):
         assert self._within_context, "iter_epochs() should be called in context manager"
         assert self._within_epochs, "iter_steps() should be called in an iter_epoch."
         self._within_steps = True
+
+        def disp_condition():
+            return self._disp_step_freq is not None and \
+                   self._step_cnt % self._disp_step_freq == 0
         try:
             for data in dataloader:
                 self._step_cnt += 1
+                self._epoch2step_dict[self._epoch_cnt].append(self._step_cnt)
+                self._step2epoch_dict[self._step_cnt] = self._epoch_cnt
                 tic = time.time()
                 yield self._step_cnt, data
                 toc = time.time()
                 self.submit_metric(self.__STEP_TIME_KEY, toc - tic)
                 if self._max_steps is not None and self._step_cnt >= self._max_steps:
                     break
+                if disp_condition():
+                    self._print_log(unit="step")
+                    self._displayed_at_step = self._step_cnt
         finally:
             self._within_steps = False
 
-    @property
-    def metrics(self):
-        return self._metrics
-
-    @property
-    def data(self):
-        return self._data
-
-    def get_metric_by_epoch(self, epoch: int):
-        assert isinstance(epoch, (int, np.integer)) and epoch > 0, "{} should be positive integer: {}".format("epoch",
-                                                                                                              epoch)
-        return self._metrics[epoch - 1]
-
-    def get_metric(self, index: typing.Union[str, int]):
-        if isinstance(index, str):
-            return self.get_metric_by_name(index)
+    def epoch2step(self, item):
+        if isinstance(item, int):
+            return self._epoch2step_dict[item]
         else:
-            return self.get_metric_by_epoch(index)
+            return list(sum(self._epoch2step_dict[_] for _ in item))
 
-    def get_data(self, index: typing.Union[str, int]):
-        if isinstance(index, str):
-            return self.get_data_by_name(index)
+    def _get(self, data, name, *, step=None, epoch=None):
+        assert step is None or epoch is None, "step and epoch can be not None either"
+        if epoch is not None and step is None:
+            step = self.epoch2step(epoch)
+        if step is None:
+            return data[name]
         else:
-            return self.get_data_by_epoch(index)
+            return data[name][step]
 
-    def get_metric_by_name(self, name: str):
-        metric_list = []
-        epoch_list = []
-        for idx, data in enumerate(self.metrics):
-            if name in data:
-                metric_list.append(data[name])
-                epoch_list.append(idx + 1)
-        return epoch_list, metric_list
+    def get_metric(self, name, *, step=None, epoch=None):
+        return self._get(self._metrics, name, step=step, epoch=epoch)
 
-    def get_data_by_epoch(self, epoch: int):
-        assert isinstance(epoch, (int, np.integer)) and epoch > 0, "{} should be positive integer: {}".format("epoch",
-                                                                                                              epoch)
-        return self._data[epoch - 1]
-
-    def get_data_by_name(self, name: str):
-        data_list = []
-        epoch_list = []
-        for idx, data in enumerate(self.data):
-            if name in data:
-                data_list.append(data[name])
-                epoch_list.append(idx + 1)
-        return epoch_list, data_list
+    def get_data(self, name, *, step=None, epoch=None):
+        return self._get(self._data, name, step=step, epoch=epoch)
 
     def submit_metric(self, name, value):
         if self._within_steps or self._within_epochs:
-            d = self._metrics[-1]  # type: dict
-            if name not in d:
-                d[name] = []
-            d[name].append(value)
+            if name not in self._metrics:
+                self._metrics[name] = Metric(name)
+            self._metrics[name].collect(self._step_cnt, value)
         else:
             raise RuntimeError("Can't submit metric outside epoch or step")
 
     def submit_data(self, name, value):
         if self._within_steps or self._within_epochs:
-            d = self._data[-1]  # type: dict
-            if name not in d:
-                d[name] = []
-            d[name].append(value)
+            if name not in self._data:
+                self._data[name] = Metric(name)
+            self._data[name].collect(self._step_cnt, value)
         else:
             raise RuntimeError("Can't submit data outside epoch or step")
 
-    def _print_log(self):
+    def _print_log(self, unit: str):
         if self._print_fn is None:
             return
-        metrics_dict = {}
-        for metrics in self._metrics[self._displayed_at_epoch:self._epoch_cnt]:
-            for name, data in metrics.items():
-                if name not in metrics_dict:
-                    metrics_dict[name] = []
-                metrics_dict[name].append(data)
-        metric_str_list = []
+        if unit == "step":
+            item = np.arange(self._displayed_at_step + 1, self._step_cnt + 1)
+        elif unit == "epoch":
+            item = np.concatenate([self._epoch2step_dict[_]
+                                   for _ in np.arange(self._displayed_at_epoch + 1, self._epoch_cnt + 1)])
+        else:
+            raise ValueError(f"Unknown unit: {unit}")
         estimate_epoch_time, estimate_step_time = float("inf"), float("inf")
-        for name, data in metrics_dict.items():
-            mean = np.mean(data)
+        metric_str_list = []
+        for name, metric in self._metrics.items():
+            data = metric[item]
             if name == self.__EPOCH_TIME_KEY:
-                estimate_epoch_time = mean
+                estimate_epoch_time = np.mean(data)
             elif name == self.__STEP_TIME_KEY:
-                estimate_step_time = mean
-            if np.size(data) > 1:
-                std = np.std(data)
-                metric_str_list.append("{}: {:.6f}(±{:.6f})".format(name, mean, std))
-            else:
-                metric_str_list.append("{}: {:.6f}".format(name, mean))
+                estimate_step_time = np.mean(data)
+            metric_str_list.append(metric.format(item))
         metric_str = " ".join(metric_str_list)
 
         if self._max_epochs is None:
@@ -234,21 +222,6 @@ class Loop(object):
                                                               self._eta(estimate_epoch_time, estimate_step_time))
         self._print_fn("{} {}".format(process_str, metric_str))
 
-    def __make_variables(self, data):
-        if isinstance(data, Iterable):
-            ret = []
-            for x in data:
-                ret.append(self.__make_single_variable(x))
-            return tuple(ret)
-        else:
-            return self.__make_single_variable(data)
-
-    def __make_single_variable(self, data):
-        ret = Variable(data)
-        if self._use_cuda:
-            ret = ret.cuda()
-        return ret
-
 
 TrainLoop = Loop
 
@@ -260,14 +233,16 @@ class TestLoop(Loop):
     And operations will not compute grads by default
     """
     def __init__(self, print_fn: Union[typing.Callable[[str], None], None]=print,
-                 use_cuda=False, no_grad=True):
+                 no_grad=True):
         """
         :param print_fn: the print function
         :param use_cuda: use cuda no not. If it is true, Loop will automatically place data on the cuda device
         :param no_grad: disable computing grads for pytorch operations or not
         """
-        super(TestLoop, self).__init__(max_epochs=1, max_steps=None, disp_epoch_freq=1, print_fn=print_fn,
-                                       use_cuda=use_cuda)
+        super(TestLoop, self).__init__(max_epochs=1, max_steps=None,
+                                       disp_epoch_freq=1,
+                                       print_fn=print_fn,
+                                       )
         self.no_grad = no_grad
 
     def iter_epochs(self):
@@ -288,9 +263,3 @@ class TestLoop(Loop):
             else:
                 yield self
         self._within_context = False
-
-    def get_metric_by_name(self, name: str):
-        return self.metrics[0][name]
-
-    def get_data_by_name(self, name: str):
-        return self.data[0][name]
