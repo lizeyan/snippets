@@ -52,8 +52,10 @@ class Metric(object):
         data = self[item] if item is not None else list(self.data.values())
         if np.size(data) > 1:
             return f"{self.name}:{mean(data):{number_precision}}(±{std(data):{number_precision}})"
-        else:
+        elif np.size(data) == 1:
             return f"{self.name}:{mean(data):{number_precision}}"
+        else:
+            return ""
 
     @staticmethod
     @contextmanager

@@ -84,7 +84,15 @@ class Loop(object):
         yield self
         self._within_context = False
 
-    def _eta(self, epoch_time_estimate, step_time_estimate):
+    def _eta(self):
+        try:
+            epoch_time_estimate = np.asscalar(np.mean(self._metrics[self.__EPOCH_TIME_KEY]["last"]))
+        except KeyError:
+            epoch_time_estimate = float("inf")
+        try:
+            step_time_estimate = np.asscalar(np.mean(self._metrics[self.__STEP_TIME_KEY]["last"]))
+        except KeyError:
+            step_time_estimate = float("inf")
         estimate = float("inf")
         if self._max_epochs is not None:
             estimate = min(estimate, (self._max_epochs - self._epoch_cnt) * epoch_time_estimate)
@@ -199,14 +207,8 @@ class Loop(object):
                                    for _ in np.arange(self._displayed_at_epoch + 1, self._epoch_cnt + 1)])
         else:
             raise ValueError(f"Unknown unit: {unit}")
-        estimate_epoch_time, estimate_step_time = float("inf"), float("inf")
         metric_str_list = []
         for name, metric in self._metrics.items():
-            data = metric[item]
-            if name == self.__EPOCH_TIME_KEY:
-                estimate_epoch_time = np.mean(data)
-            elif name == self.__STEP_TIME_KEY:
-                estimate_step_time = np.mean(data)
             metric_str_list.append(metric.format(item))
         metric_str = " ".join(metric_str_list)
 
@@ -219,7 +221,7 @@ class Loop(object):
         else:
             step_str = "{}/{}".format(self._step_cnt, self._max_steps)
         process_str = "[epoch:{} step:{} ETA:{:.3f}s]".format(epoch_str, step_str,
-                                                              self._eta(estimate_epoch_time, estimate_step_time))
+                                                              self._eta())
         self._print_fn("{} {}".format(process_str, metric_str))
 
 

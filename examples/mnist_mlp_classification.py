@@ -49,7 +49,7 @@ model = model.cuda()
 optimizer = torch.optim.Adam(model.parameters())
 loss_fn = torch.nn.CrossEntropyLoss()
 vis = visdom.Visdom(server=VISDOM_SERVER, port=VISDOM_PORT, env="Snippets Mnist Example")
-with TrainLoop(max_epochs=10, disp_step_freq=100, disp_epoch_freq=None).with_context() as loop:
+with TrainLoop(max_epochs=10, disp_step_freq=12, disp_epoch_freq=None).with_context() as loop:
     for epoch in loop.iter_epochs():
         for _, (x, y) in loop.iter_steps(mnist_train_dataloader):
             x = x.cuda(non_blocking=True)
