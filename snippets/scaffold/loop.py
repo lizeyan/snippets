@@ -232,15 +232,17 @@ class TestLoop(Loop):
     There is not "iter_epochs" in TestLoop.
     And operations will not compute grads by default
     """
-    def __init__(self, print_fn: Union[typing.Callable[[str], None], None]=print,
-                 no_grad=True):
+    def __init__(self,
+                 max_steps: typing.Union[int, None] = None,
+                 disp_step_freq=None,
+                 print_fn: Union[typing.Callable[[str], None], None] = print,
+                 no_grad: bool=True):
         """
         :param print_fn: the print function
-        :param use_cuda: use cuda no not. If it is true, Loop will automatically place data on the cuda device
         :param no_grad: disable computing grads for pytorch operations or not
         """
-        super(TestLoop, self).__init__(max_epochs=1, max_steps=None,
-                                       disp_epoch_freq=1,
+        super(TestLoop, self).__init__(max_epochs=1, max_steps=max_steps,
+                                       disp_epoch_freq=1, disp_step_freq=disp_step_freq,
                                        print_fn=print_fn,
                                        )
         self.no_grad = no_grad
