@@ -86,11 +86,11 @@ class Loop(object):
 
     def _eta(self):
         try:
-            epoch_time_estimate = np.asscalar(np.mean(self._metrics[self.__EPOCH_TIME_KEY]["last"]))
+            epoch_time_estimate = np.asscalar(np.mean(self._metrics[self.__EPOCH_TIME_KEY]["all"]))
         except KeyError:
             epoch_time_estimate = float("inf")
         try:
-            step_time_estimate = np.asscalar(np.mean(self._metrics[self.__STEP_TIME_KEY]["last"]))
+            step_time_estimate = np.asscalar(np.mean(self._metrics[self.__STEP_TIME_KEY]["all"]))
         except KeyError:
             step_time_estimate = float("inf")
         estimate = float("inf")
