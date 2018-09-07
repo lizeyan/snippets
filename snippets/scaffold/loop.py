@@ -197,6 +197,19 @@ class Loop(object):
         else:
             raise RuntimeError("Can't submit data outside epoch or step")
 
+    def print(self, string):
+        if self._max_epochs is None:
+            epoch_str = "{}".format(self._epoch_cnt)
+        else:
+            epoch_str = "{}/{}".format(self._epoch_cnt, self._max_epochs)
+        if self._max_steps is None:
+            step_str = "{}".format(self._step_cnt)
+        else:
+            step_str = "{}/{}".format(self._step_cnt, self._max_steps)
+        process_str = "[epoch:{} step:{} ETA:{:.3f}s]".format(epoch_str, step_str,
+                                                              self._eta())
+        self._print_fn("{} {}".format(process_str, string))
+
     def _print_log(self, unit: str):
         if self._print_fn is None:
             return
@@ -212,17 +225,7 @@ class Loop(object):
             metric_str_list.append(metric.format(item))
         metric_str = " ".join(metric_str_list)
 
-        if self._max_epochs is None:
-            epoch_str = "{}".format(self._epoch_cnt)
-        else:
-            epoch_str = "{}/{}".format(self._epoch_cnt, self._max_epochs)
-        if self._max_steps is None:
-            step_str = "{}".format(self._step_cnt)
-        else:
-            step_str = "{}/{}".format(self._step_cnt, self._max_steps)
-        process_str = "[epoch:{} step:{} ETA:{:.3f}s]".format(epoch_str, step_str,
-                                                              self._eta())
-        self._print_fn("{} {}".format(process_str, metric_str))
+        self.print(metric_str)
 
 
 TrainLoop = Loop
