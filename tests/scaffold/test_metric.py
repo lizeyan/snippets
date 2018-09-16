@@ -15,6 +15,7 @@ class TestMetric(unittest.TestCase):
         metric.collect(3, 3)
         self.assertEqual(metric.data, {1: 1, 2: 2, 4: 4, 3: [3, 3, 3], 5: [1, 2, 3, 4, 5]})
         self.assertEqual(metric["all"], list({1: 1, 2: 2, 4: 4, 3: [3, 3, 3], 5: [1, 2, 3, 4, 5]}.values()))
+        self.assertEqual(metric["last"], [1, 2, 3, 4, 5])
         self.assertEqual(metric[3], [3, 3, 3])
         self.assertEqual(metric[[3, 4, 5]], [[3, 3, 3], 4, [1, 2, 3, 4, 5]])
         self.assertEqual(metric.format(1), "test:1.000")
@@ -24,7 +25,7 @@ class TestMetric(unittest.TestCase):
         ok = True
         try:
             with Metric.raise_key_error():
-                metric[128]
+                _ = metric[128]
         except KeyError:
             ok = False
         finally:
@@ -34,7 +35,7 @@ class TestMetric(unittest.TestCase):
         ok = True
         try:
             with Metric.raise_key_error():
-                metric[0, 4, 128]
+                _ = metric[0, 4, 128]
         except KeyError:
             ok = False
         finally:

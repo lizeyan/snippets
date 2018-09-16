@@ -4,7 +4,8 @@ import torch
 import torch.distributions as dist
 import torch.nn as nn
 
-from snippets.modules import VAE, MLP, Lambda
+from snippets.modules import MLP, Lambda
+from snippets.modules.bayesian import VAE
 from snippets.scaffold import get_gpu_metrics
 
 
