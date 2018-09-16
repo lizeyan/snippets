@@ -1,4 +1,0 @@
-# extra requirements to run examples
-torchvision
-matplotlib
-visdom
