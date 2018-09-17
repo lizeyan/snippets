@@ -59,12 +59,12 @@ class TestTrainLoop(unittest.TestCase):
             self.assertEqual(test_loop.get_data("value1", step="all"), [1, 1, 1, 1, 1, 1])
 
     def test_eta(self):
-        with TrainLoop(max_epochs=3, print_fn=self.print).with_context() as train_loop:
+        with TrainLoop(max_epochs=10, print_fn=self.print).with_context() as train_loop:
             for epoch in train_loop.iter_epochs():
                 time.sleep(0.01)
-                if epoch > 1:
+                if epoch > 8:
                     eta = float(re.search("ETA:(?P<eta>[\d.]+)s", self.line).group("eta"))
-                    self.assertAlmostEqual(eta, 0.03 - (epoch - 1) * 0.01, places=2)
+                    self.assertAlmostEqual(eta, 0.10 - (epoch - 1) * 0.01, places=2)
 
         with TrainLoop(max_epochs=3, max_steps=10, print_fn=self.print).with_context() as train_loop:
             for epoch in train_loop.iter_epochs():
