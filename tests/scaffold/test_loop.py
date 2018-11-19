@@ -69,10 +69,11 @@ class TestTrainLoop(unittest.TestCase):
         with TrainLoop(max_epochs=3, max_steps=10, print_fn=self.print).with_context() as train_loop:
             for epoch in train_loop.iter_epochs():
                 for step, _ in train_loop.iter_steps([torch.Tensor() for _ in range(6)]):
-                    time.sleep(0.01)
+                    time.sleep(0.1)
                 if epoch > 1:
+                    print(self.line)
                     eta = float(re.search("ETA:(?P<eta>[\d.]+)s", self.line).group("eta"))
-                    self.assertAlmostEqual(eta, 0.1 - (epoch - 1) * 6 * 0.01, places=2)
+                    self.assertAlmostEqual(eta, 1 - (epoch - 1) * 6 * 0.1, places=1)
 
     def test_print(self):
         with TrainLoop(max_epochs=14, print_fn=self.print, disp_epoch_freq=5).with_context() as train_loop:
