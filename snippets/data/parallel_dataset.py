@@ -14,3 +14,6 @@ class ParallelDataset(Dataset):
 
     def __getitem__(self, item):
         return tuple(_[item] for _ in self.dataset_list)
+
+
+__all__ = ['ParallelDataset']
