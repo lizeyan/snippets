@@ -1,5 +1,5 @@
 import unittest
-from snippets.modules import one_hot, OneHot
+from snippets.modules import one_hot
 import numpy as np
 import torch
 
@@ -20,7 +20,7 @@ class TestOneHot(unittest.TestCase):
 
         self.assertTensorEqual(one_hot(a, size=5),
                                form([[0, 1, 0, 0, 0], [0, 0, 0, 1, 0]]))
-        self.assertTensorEqual(OneHot()(a, size=5),
+        self.assertTensorEqual(one_hot(a, size=5),
                                form([[0, 1, 0, 0, 0], [0, 0, 0, 1, 0]]))
         self.assertTensorEqual(one_hot(a, size=4),
                                form([[0, 1, 0, 0], [0, 0, 0, 1]]))

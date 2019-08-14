@@ -1,1 +1,1 @@
-from .vae import VAE, VariationalAutoencoder
+from .vae import *
