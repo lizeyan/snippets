@@ -1,3 +1,4 @@
+import math
 from typing import Union, Type, Tuple
 
 import torch
@@ -33,7 +34,7 @@ class VariationalAutoEncoder(nn.Module):
 
         self.variational = self.encode
 
-    def __sample(self, distribution: dist.Distribution, sample_shape: Union[torch.Size, tuple] = torch.Size()):
+    def _sample(self, distribution: dist.Distribution, sample_shape: Union[torch.Size, tuple] = torch.Size()):
         if self.training:
             return distribution.rsample(sample_shape=sample_shape)
         else:
@@ -48,12 +49,12 @@ class VariationalAutoEncoder(nn.Module):
 
     def reconstruct(self, x_samples, sample_shape=(), n_group_dims=0) -> VAE_RETURN_TYPE:
         z_dist = self.encode(x_samples, n_group_dims=n_group_dims)
-        z_samples = self.__sample(z_dist, sample_shape)
+        z_samples = self._sample(z_dist, sample_shape)
         x_dist = self.decode(z_samples, n_group_dims=len(sample_shape) + n_group_dims)
         return x_dist, z_dist, z_samples
 
     def generative(self, sample_shape=()):
-        z_samples = self.__sample(self.z_prior_dist, sample_shape)
+        z_samples = self._sample(self.z_prior_dist, sample_shape)
         x_dist = self.decode(z_samples=z_samples, n_group_dims=len(sample_shape))
         return x_dist
 
@@ -88,17 +89,17 @@ class VariationalAutoEncoder(nn.Module):
         emulate LL by importance sampling
         """
         z_dist = self.encode(x_samples, n_group_dims=n_group_dims)
-        z_samples = self.__sample(z_dist, (n_samples,))
+        z_samples = self._sample(z_dist, (n_samples,))
         x_dist = self.decode(z_samples, n_group_dims=1 + n_group_dims)
         p_x_z = x_dist.log_prob(x_samples)
         p_z = self.z_prior_dist.log_prob(z_samples)
         q_z_x = z_dist.log_prob(z_samples)
         log_likelihood = p_x_z + p_z - q_z_x
-        return torch.mean(log_likelihood, dim=0)
+        return torch.logsumexp(log_likelihood, dim=0) - math.log(log_likelihood.shape[0])
 
     def evidence_lower_bound(self, x_samples, n_samples=1, n_group_dims=0):
         q_z_given_x = self.variational(x_samples, n_group_dims=n_group_dims)
-        z_samples = self.__sample(q_z_given_x, (n_samples,))
+        z_samples = self._sample(q_z_given_x, (n_samples,))
         p_x_given_z = self.decode(z_samples, n_group_dims=1 + n_group_dims)
         log_likelihood = p_x_given_z.log_prob(x_samples) + self.z_prior_dist.log_prob(z_samples)
         entropy_item = q_z_given_x.log_prob(z_samples)
@@ -107,7 +108,7 @@ class VariationalAutoEncoder(nn.Module):
 
     def reconstruction_probability(self, x_samples, n_samples=1, n_group_dims=0):
         q_z_given_x = self.variational(x_samples, n_group_dims=n_group_dims)
-        z_samples = self.__sample(q_z_given_x, (n_samples,))
+        z_samples = self._sample(q_z_given_x, (n_samples,))
         p_x_given_z = self.decode(z_samples, n_group_dims=1 + n_group_dims)
         log_likelihood = p_x_given_z.log_prob(x_samples)
         return torch.mean(log_likelihood, dim=0)
